@@ -1,0 +1,47 @@
+# 禁止搜狗输入法联网
+
+担心搜狗输入法收集你的个人隐私么？试试这个工具，切断输入法与外界的联网，保护你的个人隐私
+
+
+
+使用方法
+
+1. 先安装搜狗输入法，更新到最新版本，设置好皮肤等一切。
+2. 以管理员身份运行run.bat，需要输入你的搜狗输入法目录，一般是这个：C:\Program Files (x86)\SogouInput
+3. 此时你的搜狗输入法将不再联网。
+
+
+
+如果你打开控制面板的Windows Defender 防火墙
+
+![](./.resource/control-panel.png)
+
+
+
+会发现对C:\Program Files (x86)\SogouInput里面的所有可执行文件，创建了一系列入站规则，防止外网数据流入
+
+![](./.resource/inbound.png)
+
+
+
+创建了一系列出站规则，防止内网数据流出
+
+![](./.resource/outbound.png)
+
+
+
+因为禁用了网络，此时你的今日输入不会更新到你其他电脑上
+
+![](./.resource/input-update-disabled.png)
+
+
+
+因为禁用了网络，输入法升级会失败
+
+![](./.resource/upgrade-disabled.png)
+
+
+
+
+
+如果想取消，删除这些入站规则和出站规则即可。

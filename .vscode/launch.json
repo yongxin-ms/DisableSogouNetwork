@@ -5,7 +5,7 @@
       "name": "PowerShell Launch Current File",
       "type": "PowerShell",
       "request": "launch",
-      "script": "${file}",
+      "script": "sudo ${file}",
       "cwd": "${cwd}"
     }
   ]

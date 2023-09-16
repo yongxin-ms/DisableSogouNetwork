@@ -10,7 +10,7 @@
     $displayName = "blocked $folderName via script"
     Remove-NetFirewallRule -DisplayName $displayName
 
-    Get-ChildItem -Path $folderName -Recurse *.exe | Select-Object FullName | ForEach-Object -Process {
+    Get-ChildItem -Path $folderName -Recurse *.exe | ForEach-Object -Process {
         New-NetFirewallRule `
             -DisplayName $displayName `
             -Direction Inbound `

@@ -6,7 +6,7 @@
   "editor.formatOnSave": true,
   "editor.formatOnPaste": true,
   "editor.defaultFormatter": "esbenp.prettier-vscode",
-  "prettier.tabWidth": 4,
+  "prettier.tabWidth": 2,
   "prettier.useTabs": false,
   "prettier.printWidth": 100,
   "[powershell]": {

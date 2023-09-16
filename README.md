@@ -6,10 +6,12 @@
 
 ### Windows
 
+适用于Win10，Win11
+
 使用方法
 
 1. 先安装搜狗输入法，更新到最新版本，设置好皮肤等一切。
-2. 以管理员身份运行 `run.bat`，输入你的搜狗输入法目录，一般是：`C:\Program Files (x86)\SogouInput`
+2. 以管理员身份运行 `run.ps1`，输入你的搜狗输入法目录，一般是：`C:\Program Files (x86)\SogouInput`，可以直接回车
 3. 此时你的搜狗输入法将不再联网。
 
 

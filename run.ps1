@@ -10,6 +10,8 @@ function Disable-Network {
         $folderName = $result
     }
 
+    Remove-NetFirewallRule -DisplayName "Sogou Pinyin Service" -ErrorAction Ignore
+
     $displayName = "blocked $folderName via script"
     Remove-NetFirewallRule -DisplayName $displayName -ErrorAction Ignore
 

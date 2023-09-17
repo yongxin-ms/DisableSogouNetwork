@@ -13,6 +13,7 @@ function Disable-Network {
     $displayName = "blocked $folderName via script"
     Remove-NetFirewallRule -DisplayName $displayName
 
+    $count = 0
     Get-ChildItem -Path $folderName -Recurse *.exe | ForEach-Object -Process {
         New-NetFirewallRule `
             -DisplayName $displayName `
@@ -25,7 +26,11 @@ function Disable-Network {
             -Direction Outbound `
             -Program $_.FullName `
             -Action Block
+
+        $count += 2
     }
+
+    Write-Host "Successfully added $count rules"
 }
 
 Disable-Network -folderName "C:\Program Files (x86)\SogouInput"

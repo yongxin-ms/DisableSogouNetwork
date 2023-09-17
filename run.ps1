@@ -1,4 +1,7 @@
-﻿function Disable-Network {
+﻿#Requires -Version 5.1
+#Requires -RunAsAdministrator
+
+function Disable-Network {
     param (
         [string] $folderName
     )

@@ -2,7 +2,7 @@
   "editor.tabSize": 4,
   "editor.useTabStops": false,
   "editor.insertSpaces": true,
-  "editor.detectIndentation": true,
+  "editor.detectIndentation": false,
   "editor.formatOnSave": true,
   "editor.formatOnPaste": true,
   "editor.defaultFormatter": "esbenp.prettier-vscode",

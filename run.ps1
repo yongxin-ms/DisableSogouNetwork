@@ -11,7 +11,7 @@ function Disable-Network {
     }
 
     $displayName = "blocked $folderName via script"
-    Remove-NetFirewallRule -DisplayName $displayName
+    Remove-NetFirewallRule -DisplayName $displayName -ErrorAction Ignore
 
     $count = 0
     Get-ChildItem -Path $folderName -Recurse *.exe | ForEach-Object -Process {

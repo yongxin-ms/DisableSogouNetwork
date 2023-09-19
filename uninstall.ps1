@@ -1,7 +1,7 @@
 ﻿#Requires -Version 5.1
 #Requires -RunAsAdministrator
 
-function Uninstall {
+function Reset {
     param (
         [string] $folderName
     )
@@ -10,16 +10,21 @@ function Uninstall {
         $folderName = $result
     }
 
+    $stdDisplayName = "Sogou Pinyin Service"
+    Remove-NetFirewallRule -DisplayName $stdDisplayName -ErrorAction Ignore
+
     $displayName = "blocked $folderName via script"
     Remove-NetFirewallRule -DisplayName $displayName -ErrorAction Ignore
 
+    Write-Host "Adding rules..."
     $count = 0
     Get-ChildItem -Path $folderName -Recurse *.exe | ForEach-Object -Process {
         New-NetFirewallRule `
-            -DisplayName "Sogou Pinyin Service" `
+            -DisplayName $stdDisplayName `
             -Direction Inbound `
             -Program $_.FullName `
-            -Action Allow
+            -Action Allow `
+        | out-null
 
         $count += 1
     }
@@ -27,4 +32,4 @@ function Uninstall {
     Write-Host "Successfully added $count rules"
 }
 
-Uninstall -folderName "C:\Program Files (x86)\SogouInput"
+Reset -folderName "C:\Program Files (x86)\SogouInput"

@@ -13,6 +13,13 @@
 1. 先安装搜狗输入法，更新到最新版本，设置好皮肤等一切。
 2. 以管理员身份运行 `run.ps1`，输入你的搜狗输入法目录，一般是：`C:\Program Files (x86)\SogouInput`，可以直接回车
 3. 此时你的搜狗输入法将不再联网。
+4. 如果您想继续让输入法联网，可以删除inbound和outbound中以下几十条防火墙记录
+
+   ```
+   Blocked C:\Program Files (x86)\SogouInput via script
+   ```
+
+   
 
 
 

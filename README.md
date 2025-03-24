@@ -48,19 +48,15 @@
 
 ![](./.resource/iOS.PNG)
 
-
-
 #### 热心老板请我喝杯咖啡，请随意！
 
 | ![pay_tencent](./.resource/pay_tencent.png) | ![pay_ali](./.resource/pay_ali.png) |
 | ------------------------------------------- | ----------------------------------- |
 
-
-
-
-
 **如果你觉得这个工具有用，麻烦请 Star，如果您有意见或者建议，欢迎提 Issue！**
 
 您的支持是我坚持的动力，感谢！
 
-[![Star History Chart](https://api.star-history.com/svg?repos=yongxin-ms/DisableSogouNetwork&type==Date)](https://star-history.com/#yongxin-ms/DisableSogouNetwork&Date)
+## Star History
+
+[![Star History Chart](https://api.star-history.com/svg?repos=yongxin-ms/DisableSogouNetwork&type=Date)](https://www.star-history.com/#yongxin-ms/DisableSogouNetwork&Date)

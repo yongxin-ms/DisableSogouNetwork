@@ -1,14 +1,10 @@
-﻿#Requires -Version 5.1
+#Requires -Version 5.1
 #Requires -RunAsAdministrator
 
 function Reset {
     param (
         [string] $folderName
     )
-
-    if (($result = Read-Host "Press enter to accept default folder: $folderName") -ne '') {
-        $folderName = $result
-    }
 
     $stdDisplayName = "Sogou Pinyin Service"
     Remove-NetFirewallRule -DisplayName $stdDisplayName -ErrorAction Ignore
@@ -32,4 +28,11 @@ function Reset {
     Write-Host "Successfully added $count rules"
 }
 
-Reset -folderName "C:\Program Files (x86)\SogouInput"
+$folderName = "C:\Program Files (x86)\SogouInput"
+
+if (($result = Read-Host "Press enter to accept default folder: $folderName") -ne '') {
+	$folderName = $result
+}
+
+Reset -folderName $folderName
+Reset -folderName "C:\Windows\SysWOW64\IME\SogouPY"

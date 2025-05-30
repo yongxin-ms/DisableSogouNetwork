@@ -1,14 +1,10 @@
-﻿#Requires -Version 5.1
+#Requires -Version 5.1
 #Requires -RunAsAdministrator
 
 function Disable-Network {
     param (
         [string] $folderName
     )
-
-    if (($result = Read-Host "Press enter to accept default folder: $folderName") -ne '') {
-        $folderName = $result
-    }
 
     Remove-NetFirewallRule -DisplayName "Sogou Pinyin Service" -ErrorAction Ignore
 
@@ -38,4 +34,11 @@ function Disable-Network {
     Write-Host "Successfully added $count rules"
 }
 
-Disable-Network -folderName "C:\Program Files (x86)\SogouInput"
+$folderName = "C:\Program Files (x86)\SogouInput"
+
+if (($result = Read-Host "Press enter to accept default folder: $folderName") -ne '') {
+	$folderName = $result
+}
+
+Disable-Network -folderName $folderName
+Disable-Network -folderName "C:\Windows\SysWOW64\IME\SogouPY"

@@ -48,6 +48,26 @@
 
 ![](./.resource/iOS.PNG)
 
+
+
+**如果您在Windows上使用了clash进行网络代理，需要进行如下设置，否则拦截可能无效。感谢[TNTCompany](https://github.com/TNTCompany)提供解决方法**
+
+![495717591-6fa03dd1-c419-4237-8dd2-20020585db22](./.resource/495717591-6fa03dd1-c419-4237-8dd2-20020585db22.png)
+
+
+
+然后随便写一个，让它找不到真正的代理就可以。
+
+![495718213-21ff3f09-8758-4afb-8df1-3fb4503ffeea](./.resource/495718213-21ff3f09-8758-4afb-8df1-3fb4503ffeea.png)
+
+
+
+然后测试一下，它就没办法更新了。
+
+![495718700-9c9f95f0-78c6-4483-a7f7-a282277a1384](./.resource/495718700-9c9f95f0-78c6-4483-a7f7-a282277a1384.png)
+
+
+
 #### 热心老板请我喝杯咖啡，请随意！
 
 | ![pay_tencent](./.resource/pay_tencent.png) | ![pay_ali](./.resource/pay_ali.png) |

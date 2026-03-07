@@ -14,11 +14,39 @@
 
 适用于 Win10，Win11
 
-使用方法
+#### 使用方法
 
 1. 先安装搜狗输入法，更新到最新版本，设置好皮肤等一切。
-2. 以管理员身份运行 `run.ps1`，输入您的搜狗输入法目录，一般是：`C:\Program Files (x86)\SogouInput`，可以直接回车，执行完毕后您的搜狗输入法将不再联网。
-3. 如果您想继续让输入法联网，可以以管理员身份运行`uninstall.ps1`，输入您的搜狗输入法目录，一般是：`C:\Program Files (x86)\SogouInput`，可以直接回车，执行完毕后您的搜狗输入法的网络即可恢复联网。
+2. 以管理员身份运行 `run.ps1`，按提示输入搜狗输入法目录（一般是 `C:\Program Files (x86)\SogouInput`），直接回车使用默认路径。执行完毕后搜狗输入法将不再联网。
+3. 如需恢复联网，以管理员身份运行 `uninstall.ps1`，脚本会自动删除所有本工具创建的防火墙规则，无需输入任何路径。
+
+#### 高级用法
+
+```powershell
+# 仅阻断出站流量（不阻断入站）
+.\run.ps1 -DirectionMode OutboundOnly
+
+# 指定自定义目录
+.\run.ps1 -MainFolder "D:\SogouInput"
+
+# 同时指定额外目录（覆盖默认的 ExtraFolders）
+.\run.ps1 -ExtraFolders @('C:\Windows\SysWOW64\IME\SogouPY', 'D:\OtherSogouDir')
+```
+
+#### 防火墙规则管理
+
+所有由 `run.ps1` 创建的规则均归入分组 **`DisableSogouNetwork`**，可在
+「Windows Defender 防火墙 → 高级安全设置」中按分组筛选查看，也可通过以下 PowerShell 命令管理：
+
+```powershell
+# 查看所有已创建的规则
+Get-NetFirewallRule -Group 'DisableSogouNetwork'
+
+# 手动批量删除所有规则
+Remove-NetFirewallRule -Group 'DisableSogouNetwork'
+```
+
+重复运行 `run.ps1` 不会导致规则膨胀——每次运行前会自动清除同组旧规则再重新创建。
 
 如果您打开控制面板的 Windows Defender 防火墙
 
@@ -40,7 +68,7 @@
 
 ![](./.resource/upgrade-disabled.png)
 
-如果想取消，删除这些入站规则和出站规则即可。
+如果想取消，运行 `uninstall.ps1` 即可一键清除所有阻断规则。
 
 ### iPhone
 

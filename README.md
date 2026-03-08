@@ -78,6 +78,8 @@ Remove-NetFirewallRule -Group 'DisableSogouNetwork'
 
 
 
+**如果您在Windows上使用了 v2rayN，脚本默认会额外创建防火墙规则，阻止搜狗输入法通过本机 IPv4（127.0.0.1）和 IPv6（::1）回环地址连接代理端口（默认阻断 10808、10811、10812、10813），防止其借助本地代理绕过拦截。重新运行 `run.ps1` 即可使该规则生效。**
+
 **如果您在Windows上使用了clash进行网络代理，需要进行如下设置，否则拦截可能无效。感谢[TNTCompany](https://github.com/TNTCompany)提供解决方法**
 
 ![495717591-6fa03dd1-c419-4237-8dd2-20020585db22](./.resource/495717591-6fa03dd1-c419-4237-8dd2-20020585db22.png)

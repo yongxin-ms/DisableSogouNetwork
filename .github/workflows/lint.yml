@@ -1,0 +1,45 @@
+name: PowerShell Lint
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+
+jobs:
+  psscriptanalyzer:
+    name: PSScriptAnalyzer
+    runs-on: windows-latest
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install PSScriptAnalyzer
+        shell: pwsh
+        run: |
+          Install-Module -Name PSScriptAnalyzer -Force -Scope CurrentUser
+
+      - name: Lint run.ps1
+        shell: pwsh
+        run: |
+          $results = Invoke-ScriptAnalyzer -Path .\run.ps1 `
+            -Settings .\PSScriptAnalyzerSettings.psd1 `
+            -Severity Warning, Error
+          if ($results) {
+            $results | Format-Table -AutoSize
+            exit 1
+          }
+
+      - name: Lint uninstall.ps1
+        shell: pwsh
+        run: |
+          $results = Invoke-ScriptAnalyzer -Path .\uninstall.ps1 `
+            -Settings .\PSScriptAnalyzerSettings.psd1 `
+            -Severity Warning, Error
+          if ($results) {
+            $results | Format-Table -AutoSize
+            exit 1
+          }

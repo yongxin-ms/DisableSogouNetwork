@@ -3,111 +3,149 @@
 
 <#
 .SYNOPSIS
-禁用指定文件夹中所有exe文件的网络访问权限
+    禁用搜狗输入法相关 exe 文件的网络访问权限
 
 .DESCRIPTION
-该函数通过创建Windows防火墙规则来阻止指定文件夹及其子文件夹中所有exe文件的入站和出站网络连接。
-首先会删除已存在的相关防火墙规则，然后为每个exe文件创建新的阻止规则。
+    通过创建 Windows 防火墙阻止规则，阻断指定目录及其子目录中所有 .exe 文件的网络连接。
+    所有规则统一归入分组 "DisableSogouNetwork"，便于批量管理与精准删除。
+    重复运行前会自动清除同组旧规则，确保幂等性，不会造成规则膨胀。
 
-.PARAMETER folderName
-需要禁用网络访问的文件夹路径
+.PARAMETER MainFolder
+    主目录路径。若不传入，脚本将交互提示，直接回车使用默认值
+    C:\Program Files (x86)\SogouInput
+
+.PARAMETER ExtraFolders
+    额外需要处理的目录列表（默认含 C:\Windows\SysWOW64\IME\SogouPY）。
+    若某目录不存在，会输出警告并跳过，不影响其他目录的处理。
+
+.PARAMETER DirectionMode
+    防火墙规则方向：
+      Both        - 同时阻断入站和出站（默认）
+      OutboundOnly - 仅阻断出站
 
 .EXAMPLE
-Disable-Network -folderName "C:\Program Files\MyApp"
+    .\run.ps1
+    # 交互式输入，回车使用默认路径，同时阻断入站+出站
+
+.EXAMPLE
+    .\run.ps1 -MainFolder "D:\SogouInput" -DirectionMode OutboundOnly
+    # 指定目录，仅阻断出站流量
 #>
 
-function Disable-Network {
+param (
+    [string]   $MainFolder    = '',
+    [string[]] $ExtraFolders  = @('C:\Windows\SysWOW64\IME\SogouPY'),
+    [ValidateSet('Both', 'OutboundOnly')]
+    [string]   $DirectionMode = 'Both'
+)
+
+$script:GroupName = 'DisableSogouNetwork'
+
+function Add-BlockRule {
+    <#
+    .SYNOPSIS 为指定目录下的所有 .exe 添加防火墙阻断规则。
+    #>
+    [CmdletBinding()]
     param (
-        # 确保参数必填
         [Parameter(Mandatory = $true)]
-        # 验证文件夹路径合法
-        [ValidateScript({
-                if (-not (Test-Path $_ -PathType Container)) {
-                    throw "Folder '$_' does not exist or is not a directory."
-                }
-                return $true
-            })]
-        [string] $folderName
+        [string] $FolderPath,
+
+        [ValidateSet('Both', 'OutboundOnly')]
+        [string] $Mode = 'Both'
     )
 
-    try {
-        Write-Host "Processing folder: $folderName" -ForegroundColor Yellow
+    if (-not (Test-Path -Path $FolderPath -PathType Container)) {
+        Write-Warning "目录不存在，已跳过：$FolderPath"
+        return
+    }
 
-        # 删除已存在的防火墙规则
-        Write-Host "Removing existing firewall rules..." -ForegroundColor Cyan
-        Remove-NetFirewallRule -DisplayName "Sogou Pinyin Service" -ErrorAction SilentlyContinue
-        $displayName = "blocked $folderName via script"
-        $removedRules = Remove-NetFirewallRule -DisplayName $displayName -ErrorAction SilentlyContinue
+    Write-Host "正在处理目录：$FolderPath" -ForegroundColor Yellow
 
-        # 遍历文件夹中所有exe文件，为每个文件创建入站和出站阻止规则
-        Write-Host "Searching for .exe files..." -ForegroundColor Cyan
-        $exeFiles = Get-ChildItem -Path $folderName -Recurse -Filter "*.exe" -ErrorAction SilentlyContinue
-
-        if ($exeFiles.Count -eq 0) {
-            Write-Warning "No .exe files found in $folderName"
-            return
+    # 清除该目录下已有的同组规则，确保幂等
+    Write-Host "  清除同目录旧规则（分组：$script:GroupName）..." -ForegroundColor Cyan
+    $existingRules = Get-NetFirewallRule -Group $script:GroupName -ErrorAction SilentlyContinue
+    if ($existingRules) {
+        foreach ($rule in $existingRules) {
+            $appFilter = $rule | Get-NetFirewallApplicationFilter -ErrorAction SilentlyContinue
+            if ($appFilter -and $appFilter.Program -like "$FolderPath\*") {
+                $rule | Remove-NetFirewallRule -ErrorAction SilentlyContinue
+            }
         }
+    }
 
-        Write-Host "Found $($exeFiles.Count) .exe files. Adding firewall rules..." -ForegroundColor Cyan
-        $count = 0
-        $successCount = 0
+    # 枚举目录下所有 exe 文件
+    $exeFiles = Get-ChildItem -Path $FolderPath -Recurse -Filter '*.exe' -ErrorAction SilentlyContinue
+    if (-not $exeFiles -or $exeFiles.Count -eq 0) {
+        Write-Warning "未找到 .exe 文件：$FolderPath"
+        return
+    }
 
-        foreach ($file in $exeFiles) {
-            try {
-                # 创建入站规则
+    Write-Host "  找到 $($exeFiles.Count) 个 .exe 文件，正在创建阻断规则..." -ForegroundColor Cyan
+    $addedRules = 0
+    $addedFiles = 0
+
+    foreach ($file in $exeFiles) {
+        try {
+            # 出站阻断规则（始终创建）
+            New-NetFirewallRule `
+                -DisplayName "$script:GroupName - $($file.FullName) [Outbound]" `
+                -Group $script:GroupName `
+                -Direction Outbound `
+                -Program $file.FullName `
+                -Action Block `
+                -ErrorAction Stop | Out-Null
+            $addedRules++
+
+            if ($Mode -eq 'Both') {
+                # 入站阻断规则
                 New-NetFirewallRule `
-                    -DisplayName $displayName `
+                    -DisplayName "$script:GroupName - $($file.FullName) [Inbound]" `
+                    -Group $script:GroupName `
                     -Direction Inbound `
                     -Program $file.FullName `
                     -Action Block `
-                    -ErrorAction Stop `
-                | Out-Null
-
-                # 创建出站规则
-                New-NetFirewallRule `
-                    -DisplayName $displayName `
-                    -Direction Outbound `
-                    -Program $file.FullName `
-                    -Action Block `
-                    -ErrorAction Stop `
-                | Out-Null
-
-                $count += 2
-                $successCount += 1
-                Write-Host "  ✓ Added rules for $($file.Name)" -ForegroundColor Green
+                    -ErrorAction Stop | Out-Null
+                $addedRules++
             }
-            catch {
-                Write-Warning "Failed to create firewall rules for $($file.FullName): $($_.Exception.Message)"
-            }
+
+            $addedFiles++
+            Write-Host "    [+] $($file.Name)" -ForegroundColor Green
         }
-
-        Write-Host "Successfully added $count rules for $successCount files" -ForegroundColor Green
-    }
-    catch {
-        throw "Failed to disable network for folder '$folderName': $($_.Exception.Message)"
-    }
-}
-
-try {
-    # 设置默认文件夹路径
-    $folderName = "C:\Program Files (x86)\SogouInput"
-
-    # 提示用户输入文件夹路径，如果直接回车则使用默认路径
-    $result = Read-Host "Press enter to accept default folder: $folderName"
-    if ($result -ne '') {
-        $folderName = $result
+        catch {
+            Write-Warning "为 '$($file.FullName)' 创建规则失败：$($_.Exception.Message)"
+        }
     }
 
-    # 调用函数禁用网络访问权限
-    Write-Host "Starting network blocking process..." -ForegroundColor Yellow
-    Disable-Network -folderName $folderName
-
-    Write-Host "Processing second folder..." -ForegroundColor Yellow
-    Disable-Network -folderName "C:\Windows\SysWOW64\IME\SogouPY"
-
-    Write-Host "Network access blocking completed successfully." -ForegroundColor Green
+    Write-Host "  已为 $addedFiles 个文件成功创建 $addedRules 条规则。" -ForegroundColor Green
 }
-catch {
-    Write-Error "Script execution failed: $($_.Exception.Message)"
-    exit 1
+
+# ── 主流程 ────────────────────────────────────────────────────────────────────
+
+# 若未通过参数传入主目录，则交互提示
+$defaultMain = 'C:\Program Files (x86)\SogouInput'
+if ($MainFolder -eq '') {
+    $userInput = Read-Host "请输入搜狗输入法目录（直接回车使用默认：$defaultMain）"
+    $MainFolder = if ($userInput -ne '') { $userInput } else { $defaultMain }
 }
+
+Write-Host ''
+Write-Host '=== 开始禁用搜狗输入法网络访问 ===' -ForegroundColor Yellow
+Write-Host "主目录    ：$MainFolder" -ForegroundColor Cyan
+Write-Host "方向模式  ：$DirectionMode" -ForegroundColor Cyan
+Write-Host "规则分组  ：$script:GroupName" -ForegroundColor Cyan
+Write-Host ''
+
+# 处理主目录
+Add-BlockRule -FolderPath $MainFolder -Mode $DirectionMode
+
+# 处理额外目录（不存在时仅警告，不中断）
+foreach ($folder in $ExtraFolders) {
+    Write-Host ''
+    Add-BlockRule -FolderPath $folder -Mode $DirectionMode
+}
+
+Write-Host ''
+Write-Host '=== 完成 ===' -ForegroundColor Green
+Write-Host "所有规则已归入分组：'$script:GroupName'" -ForegroundColor Cyan
+Write-Host "提示：可在「Windows Defender 防火墙 -> 高级安全设置」中按分组筛选查看规则。" -ForegroundColor Cyan
+Write-Host '如需卸载，请以管理员身份运行 uninstall.ps1' -ForegroundColor Cyan

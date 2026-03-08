@@ -10,11 +10,12 @@
     所有规则统一归入分组 "DisableSogouNetwork"，便于批量管理与精准删除。
     重复运行前会自动清除同组旧规则，确保幂等性，不会造成规则膨胀。
 
-    可选功能：阻断 v2rayN 本地代理绕过。
-    当用户启用 v2rayN 等代理软件后，搜狗输入法可能通过连接本机回环代理端口（如 Mixed Port）
-    将网络请求转交给代理进程，从而绕过按程序阻断的策略。
+    可选功能：阻断本地代理绕过（兼容 v2rayN、Clash 等代理软件）。
+    当用户启用代理软件后，搜狗输入法可能通过连接本机回环地址上的代理端口（系统代理模式）
+    或通过代理软件的 TUN 虚拟网卡（TUN 模式）将请求转交代理进程，从而绕过按程序阻断的策略。
     启用此功能（BlockV2rayNProxyBypass）后，脚本会额外为每个 exe 创建一条出站阻断规则，
-    禁止其连接 127.0.0.1 上指定的代理端口（默认覆盖 10808、10811、10812、10813）。
+    禁止其连接本机全部回环地址（IPv4 127.0.0.0/8 及 IPv6 ::1）的任意端口，
+    无论代理软件使用何种端口或协议，均可有效防止通过本地代理绕过联网限制。
 
 .PARAMETER MainFolder
     主目录路径。若不传入，脚本将交互提示，直接回车使用默认值
@@ -30,33 +31,23 @@
       OutboundOnly - 仅阻断出站
 
 .PARAMETER BlockV2rayNProxyBypass
-    是否启用 v2rayN 本地代理绕过阻断（默认 $true）。
-    启用后，会额外为每个 exe 创建一条 IPv4（127.0.0.1）出站阻断规则，
-    禁止其连接本机回环地址上的 v2rayN 代理端口，防止通过代理绕过联网限制。
-
-.PARAMETER V2rayNMixedPort
-    v2rayN 的 Mixed Port 端口号（默认 10808）。
-    与 V2rayNExtraPortOffsets 共同决定需要阻断的端口集合。
-
-.PARAMETER V2rayNExtraPortOffsets
-    相对于 V2rayNMixedPort 的偏移量列表（默认 @(3, 4, 5)）。
-    默认偏移对应：PAC Port（+3=10811）、Xray API（+4=10812）、mihomo API（+5=10813）。
+    是否启用本地代理绕过阻断（默认 $true）。
+    启用后，会额外为每个 exe 创建一条出站阻断规则，
+    禁止其连接本机全部回环地址（IPv4 127.0.0.0/8 及 IPv6 ::1）的任意端口与协议，
+    兼容 v2rayN、Clash 等代理软件的系统代理模式及 TUN 模式，
+    防止搜狗输入法通过任意本地代理绕过联网限制。
 
 .EXAMPLE
     .\run.ps1
-    # 交互式输入，回车使用默认路径，同时阻断入站+出站，并启用 v2rayN 绕过阻断
+    # 交互式输入，回车使用默认路径，同时阻断入站+出站，并启用本地代理绕过阻断
 
 .EXAMPLE
     .\run.ps1 -MainFolder "D:\SogouInput" -DirectionMode OutboundOnly
-    # 指定目录，仅阻断出站流量，并启用 v2rayN 绕过阻断
+    # 指定目录，仅阻断出站流量，并启用本地代理绕过阻断
 
 .EXAMPLE
     .\run.ps1 -BlockV2rayNProxyBypass $false
-    # 禁用 v2rayN 绕过阻断，仅保留原有防火墙规则
-
-.EXAMPLE
-    .\run.ps1 -V2rayNMixedPort 7890 -V2rayNExtraPortOffsets @(1, 2)
-    # 使用自定义 Mixed Port 7890，额外阻断 7891、7892 端口
+    # 禁用本地代理绕过阻断，仅保留原有防火墙规则
 #>
 
 param (
@@ -64,9 +55,7 @@ param (
     [string[]] $ExtraFolders             = @('C:\Windows\SysWOW64\IME\SogouPY'),
     [ValidateSet('Both', 'OutboundOnly')]
     [string]   $DirectionMode            = 'Both',
-    [bool]     $BlockV2rayNProxyBypass   = $true,
-    [int]      $V2rayNMixedPort          = 10808,
-    [int[]]    $V2rayNExtraPortOffsets   = @(3, 4, 5)
+    [bool]     $BlockV2rayNProxyBypass   = $true
 )
 
 $script:GroupName = 'DisableSogouNetwork'
@@ -83,9 +72,7 @@ function Add-BlockRule {
         [ValidateSet('Both', 'OutboundOnly')]
         [string] $Mode = 'Both',
 
-        [bool]   $BlockV2rayNProxyBypass  = $true,
-        [int]    $V2rayNMixedPort         = 10808,
-        [int[]]  $V2rayNExtraPortOffsets  = @(3, 4, 5)
+        [bool]   $BlockV2rayNProxyBypass  = $true
     )
 
     if (-not (Test-Path -Path $FolderPath -PathType Container)) {
@@ -118,12 +105,6 @@ function Add-BlockRule {
     $addedRules = 0
     $addedFiles = 0
 
-    # 预计算 v2rayN 本地代理绕过阻断端口（本次循环所有 exe 共用）
-    $loopbackPorts = $null
-    if ($BlockV2rayNProxyBypass) {
-        $loopbackPorts = @([string]$V2rayNMixedPort) + ($V2rayNExtraPortOffsets | ForEach-Object { [string]($V2rayNMixedPort + $_) })
-    }
-
     foreach ($file in $exeFiles) {
         try {
             # 出站阻断规则（始终创建）
@@ -148,16 +129,25 @@ function Add-BlockRule {
                 $addedRules++
             }
 
-            # v2rayN 本地代理绕过阻断规则（IPv4）：禁止该 exe 连接本机 IPv4 回环代理端口
+            # 本地回环全端口阻断规则：禁止该 exe 连接本机任意回环地址（IPv4 127.0.0.0/8 及 IPv6 ::1）
+            # 的任意端口与协议，防止通过 v2rayN、Clash 等代理软件的系统代理模式或 TUN 模式绕过联网限制。
             if ($BlockV2rayNProxyBypass) {
                 New-NetFirewallRule `
-                    -DisplayName "$script:GroupName - $($file.FullName) [BlockV2rayNLoopback IPv4]" `
+                    -DisplayName "$script:GroupName - $($file.FullName) [BlockLoopback IPv4]" `
                     -Group $script:GroupName `
                     -Direction Outbound `
                     -Program $file.FullName `
-                    -Protocol TCP `
-                    -RemoteAddress '127.0.0.1' `
-                    -RemotePort $loopbackPorts `
+                    -RemoteAddress '127.0.0.0/8' `
+                    -Action Block `
+                    -ErrorAction Stop | Out-Null
+                $addedRules++
+
+                New-NetFirewallRule `
+                    -DisplayName "$script:GroupName - $($file.FullName) [BlockLoopback IPv6]" `
+                    -Group $script:GroupName `
+                    -Direction Outbound `
+                    -Program $file.FullName `
+                    -RemoteAddress '::1/128' `
                     -Action Block `
                     -ErrorAction Stop | Out-Null
                 $addedRules++
@@ -189,27 +179,22 @@ Write-Host "主目录    ：$MainFolder" -ForegroundColor Cyan
 Write-Host "方向模式  ：$DirectionMode" -ForegroundColor Cyan
 Write-Host "规则分组  ：$script:GroupName" -ForegroundColor Cyan
 if ($BlockV2rayNProxyBypass) {
-    $loopbackPortsInfo = @($V2rayNMixedPort) + ($V2rayNExtraPortOffsets | ForEach-Object { $V2rayNMixedPort + $_ })
-    Write-Host "v2rayN绕过阻断：已启用（MixedPort：$V2rayNMixedPort，阻断端口：$($loopbackPortsInfo -join ', ')）" -ForegroundColor Cyan
+    Write-Host "本地代理绕过阻断：已启用（阻断所有回环地址 127.0.0.0/8 及 ::1 的全部端口）" -ForegroundColor Cyan
 }
 else {
-    Write-Host "v2rayN绕过阻断：已禁用" -ForegroundColor Cyan
+    Write-Host "本地代理绕过阻断：已禁用" -ForegroundColor Cyan
 }
 Write-Host ''
 
 # 处理主目录
 Add-BlockRule -FolderPath $MainFolder -Mode $DirectionMode `
-    -BlockV2rayNProxyBypass $BlockV2rayNProxyBypass `
-    -V2rayNMixedPort $V2rayNMixedPort `
-    -V2rayNExtraPortOffsets $V2rayNExtraPortOffsets
+    -BlockV2rayNProxyBypass $BlockV2rayNProxyBypass
 
 # 处理额外目录（不存在时仅警告，不中断）
 foreach ($folder in $ExtraFolders) {
     Write-Host ''
     Add-BlockRule -FolderPath $folder -Mode $DirectionMode `
-        -BlockV2rayNProxyBypass $BlockV2rayNProxyBypass `
-        -V2rayNMixedPort $V2rayNMixedPort `
-        -V2rayNExtraPortOffsets $V2rayNExtraPortOffsets
+        -BlockV2rayNProxyBypass $BlockV2rayNProxyBypass
 }
 
 Write-Host ''

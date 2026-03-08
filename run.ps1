@@ -13,10 +13,8 @@
     可选功能：阻断 v2rayN 本地代理绕过。
     当用户启用 v2rayN 等代理软件后，搜狗输入法可能通过连接本机回环代理端口（如 Mixed Port）
     将网络请求转交给代理进程，从而绕过按程序阻断的策略。
-    启用此功能（BlockV2rayNProxyBypass）后，脚本会额外为每个 exe 分别创建 IPv4 与 IPv6 两条出站阻断规则，
-    禁止其连接 127.0.0.1 / ::1 上指定的代理端口（默认覆盖 10808、10811、10812、10813）。
-    注意：部分系统不允许为 IPv6 回环地址（::1）创建防火墙规则；此时 IPv6 规则创建失败会被单独捕获并以
-    警告形式输出，脚本会继续处理其余规则，IPv4 回环规则不受影响。
+    启用此功能（BlockV2rayNProxyBypass）后，脚本会额外为每个 exe 创建一条出站阻断规则，
+    禁止其连接 127.0.0.1 上指定的代理端口（默认覆盖 10808、10811、10812、10813）。
 
 .PARAMETER MainFolder
     主目录路径。若不传入，脚本将交互提示，直接回车使用默认值
@@ -33,9 +31,8 @@
 
 .PARAMETER BlockV2rayNProxyBypass
     是否启用 v2rayN 本地代理绕过阻断（默认 $true）。
-    启用后，会额外为每个 exe 分别创建 IPv4（127.0.0.1）与 IPv6（::1）两条出站阻断规则，
+    启用后，会额外为每个 exe 创建一条 IPv4（127.0.0.1）出站阻断规则，
     禁止其连接本机回环地址上的 v2rayN 代理端口，防止通过代理绕过联网限制。
-    若系统不支持 IPv6 回环地址规则，IPv6 规则创建失败时会输出警告并跳过，不影响整体流程。
 
 .PARAMETER V2rayNMixedPort
     v2rayN 的 Mixed Port 端口号（默认 10808）。
@@ -164,24 +161,6 @@ function Add-BlockRule {
                     -Action Block `
                     -ErrorAction Stop | Out-Null
                 $addedRules++
-
-                # v2rayN 本地代理绕过阻断规则（IPv6）：部分系统不支持 IPv6 回环地址规则，失败时仅警告并继续
-                try {
-                    New-NetFirewallRule `
-                        -DisplayName "$script:GroupName - $($file.FullName) [BlockV2rayNLoopback IPv6]" `
-                        -Group $script:GroupName `
-                        -Direction Outbound `
-                        -Program $file.FullName `
-                        -Protocol TCP `
-                        -RemoteAddress '::1' `
-                        -RemotePort $loopbackPorts `
-                        -Action Block `
-                        -ErrorAction Stop | Out-Null
-                    $addedRules++
-                }
-                catch {
-                    Write-Warning "为 '$($file.FullName)' 创建 IPv6 loopback 规则失败（已忽略）：$($_.Exception.Message)"
-                }
             }
 
             $addedFiles++

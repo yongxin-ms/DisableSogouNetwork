@@ -42,24 +42,42 @@ function Enable-ExeAccessRule {
 
     # 需要恢复权限的更新程序列表
     $exeList = @("SOGOUSmartAssistant.exe", "SogouPlayLauncher.exe", "SGWangzai.exe", "SGSmartAssistant.exe", "SGDownload.exe", "PinyinUp.exe")
-    # 定义要拒绝的权限：读取 & 执行
-    $denyRight = [System.Security.AccessControl.FileSystemRights]::Read -bor [System.Security.AccessControl.FileSystemRights]::ExecuteFile
-    $denyRule = [System.Security.AccessControl.AccessControlType]::Deny
-    # 普通用户组 Users (SID:S-1-5-32-545)
-    $userGroup = New-Object System.Security.Principal.SecurityIdentifier("S-1-5-32-545")
 
     foreach ($file in $exeFiles) {
         try {
             if ($exeList -contains $file.Name) {
-                # 获取当前访问控制列表
-                $acl = Get-Acl -Path $file.FullName
-                # 创建新的拒绝访问规则
-                $accessRule = New-Object System.Security.AccessControl.FileSystemAccessRule($userGroup, $denyRight, $denyRule)
-                # 将拒绝规则从 ACL 中移除
-                $acl.RemoveAccessRule($accessRule)
-                # 将修改后的 ACL 应用回文件
-                Set-Acl -Path $file.FullName -AclObject $acl
-                Write-Host "    [权限] 已恢复 Users 组对 '$($file.Name)' 的读取和执行权限。" -ForegroundColor Green
+                $acl = Get-Acl $file.FullName
+                $denyRules = $acl.Access | Where-Object {
+                    (
+                        $_.IdentityReference -like '*S-1-5-32-545*' -or
+                        $_.IdentityReference -like '*Everyone*' -or
+                        $_.IdentityReference -like '*BUILTIN\\Users*' -or
+                        $_.IdentityReference -like '*Users*'
+                    ) -and $_.AccessControlType -eq 'Deny' -and
+                    ($_.FileSystemRights -band ([System.Security.AccessControl.FileSystemRights]::Read -bor [System.Security.AccessControl.FileSystemRights]::ExecuteFile))
+                }
+                foreach ($r in $denyRules) { $acl.RemoveAccessRuleSpecific($r) }
+                try {
+                    Set-Acl -Path $file.FullName -AclObject $acl
+                    Start-Sleep -Milliseconds 200
+                    $remaining = (Get-Acl $file.FullName).Access | Where-Object {
+                        $_.IdentityReference -like '*S-1-5-32-545*' -and $_.AccessControlType -eq 'Deny' -and
+                        ($_.FileSystemRights -band ([System.Security.AccessControl.FileSystemRights]::Read -bor [System.Security.AccessControl.FileSystemRights]::ExecuteFile))
+                    }
+                    if ($remaining -and $remaining.Count -gt 0) {
+                        Write-Warning "    PowerShell 移除 Deny 规则未生效，尝试使用 icacls 回退修复：$($file.Name)"
+                        & icacls $file.FullName /remove:d "Everyone" /C | Out-Null
+                        & icacls $file.FullName /remove:d "Users" /C | Out-Null
+                        & icacls $file.FullName /grant:r "Users:(RX)" /C | Out-Null
+                        Write-Host "    [权限] 已用 icacls 恢复 Users/Everyone 对 '$($file.Name)' 的权限。" -ForegroundColor Green
+                    }
+                    else {
+                        Write-Host "    [权限] 已恢复 Users 组对 '$($file.Name)' 的读取和执行权限。" -ForegroundColor Green
+                    }
+                }
+                catch {
+                    Write-Warning "    Set-Acl 或 icacls 操作失败：$($_.Exception.Message)"
+                }
             }
         }
         catch {

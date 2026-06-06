@@ -5,8 +5,10 @@
       "name": "PowerShell Launch Current File",
       "type": "PowerShell",
       "request": "launch",
-      "script": "sudo ${file}",
-      "cwd": "${cwd}"
+      "script": "${file}",
+      "cwd": "${workspaceFolder}",
+      "createTemporaryIntegratedConsole": true,
+      "args": ["-ExecutionPolicy", "Bypass"]
     }
   ]
 }

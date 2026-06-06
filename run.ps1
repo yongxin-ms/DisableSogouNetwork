@@ -44,8 +44,7 @@ param (
     [string]   $MainFolder = '',
     [string[]] $ExtraFolders = @('C:\Windows\SysWOW64\IME\SogouPY'),
     [ValidateSet('Both', 'OutboundOnly')]
-    [string]   $DirectionMode = 'Both',
-
+    [string]   $DirectionMode = 'Both'
 )
 
 $script:GroupName = 'DisableSogouNetwork'
@@ -60,9 +59,7 @@ function Add-BlockRule {
         [string] $FolderPath,
 
         [ValidateSet('Both', 'OutboundOnly')]
-        [string] $Mode = 'Both',
-
-
+        [string] $Mode = 'Both'
     )
 
     if (-not (Test-Path -Path $FolderPath -PathType Container)) {

@@ -10,6 +10,21 @@
 
 担心输入法收集您的个人隐私么？试试这个工具，一键阻断输入法使用网络，保护您的个人隐私。
 
+
+
+***Update***
+
+为了不被打扰的使用输入法，防止各种不小心误升级，误点开不需要的功能比如AI汪仔，对当前用户禁用了以下程序的执行权限：
+
+- SOGOUSmartAssistant.exe
+- SogouPlayLauncher.exe
+- SGWangzai.exe
+- SGSmartAssistant.exe
+- SGDownload.exe
+- PinyinUp.exe
+
+
+
 ### Windows
 
 适用于 Win10，Win11

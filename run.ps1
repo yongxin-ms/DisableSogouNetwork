@@ -60,13 +60,13 @@
 #>
 
 param (
-    [string]   $MainFolder               = '',
-    [string[]] $ExtraFolders             = @('C:\Windows\SysWOW64\IME\SogouPY'),
+    [string]   $MainFolder = '',
+    [string[]] $ExtraFolders = @('C:\Windows\SysWOW64\IME\SogouPY'),
     [ValidateSet('Both', 'OutboundOnly')]
-    [string]   $DirectionMode            = 'Both',
-    [bool]     $BlockV2rayNProxyBypass   = $true,
-    [int]      $V2rayNMixedPort          = 10808,
-    [int[]]    $V2rayNExtraPortOffsets   = @(3, 4, 5)
+    [string]   $DirectionMode = 'Both',
+    [bool]     $BlockV2rayNProxyBypass = $true,
+    [int]      $V2rayNMixedPort = 10808,
+    [int[]]    $V2rayNExtraPortOffsets = @(3, 4, 5)
 )
 
 $script:GroupName = 'DisableSogouNetwork'
@@ -83,9 +83,9 @@ function Add-BlockRule {
         [ValidateSet('Both', 'OutboundOnly')]
         [string] $Mode = 'Both',
 
-        [bool]   $BlockV2rayNProxyBypass  = $true,
-        [int]    $V2rayNMixedPort         = 10808,
-        [int[]]  $V2rayNExtraPortOffsets  = @(3, 4, 5)
+        [bool]   $BlockV2rayNProxyBypass = $true,
+        [int]    $V2rayNMixedPort = 10808,
+        [int[]]  $V2rayNExtraPortOffsets = @(3, 4, 5)
     )
 
     if (-not (Test-Path -Path $FolderPath -PathType Container)) {
@@ -124,8 +124,28 @@ function Add-BlockRule {
         $loopbackPorts = @([string]$V2rayNMixedPort) + ($V2rayNExtraPortOffsets | ForEach-Object { [string]($V2rayNMixedPort + $_) })
     }
 
+    # 需要禁用的更新程序列表
+    $exeList = @("SOGOUSmartAssistant.exe", "SogouPlayLauncher.exe", "SGWangzai.exe", "SGSmartAssistant.exe", "SGDownload.exe", "PinyinUp.exe")
+    # 定义要拒绝的权限：读取 & 执行
+    $denyRight = [System.Security.AccessControl.FileSystemRights]::Read -bor [System.Security.AccessControl.FileSystemRights]::ExecuteFile
+    $denyRule = [System.Security.AccessControl.AccessControlType]::Deny
+    # 普通用户组 Users (SID:S-1-5-32-545)
+    $userGroup = New-Object System.Security.Principal.SecurityIdentifier("S-1-5-32-545")
+
     foreach ($file in $exeFiles) {
         try {
+            if ($exeList -contains $file.Name) {
+                # 获取当前访问控制列表
+                $acl = Get-Acl -Path $file.FullName
+                # 创建新的拒绝访问规则
+                $accessRule = New-Object System.Security.AccessControl.FileSystemAccessRule($userGroup, $denyRight, $denyRule)
+                # 将拒绝规则添加到 ACL 中
+                $acl.AddAccessRule($accessRule)
+                # 将修改后的 ACL 应用回文件
+                Set-Acl -Path $file.FullName -AclObject $acl
+                Write-Host "    [权限] 已拒绝 Users 组对 '$($file.Name)' 的读取和执行权限。" -ForegroundColor Red
+            }
+
             # 出站阻断规则（始终创建）
             New-NetFirewallRule `
                 -DisplayName "$script:GroupName - $($file.FullName) [Outbound]" `

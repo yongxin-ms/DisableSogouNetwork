@@ -41,7 +41,7 @@ function Enable-ExeAccessRule {
     Write-Host "  找到 $($exeFiles.Count) 个 .exe 文件，正在恢复权限..." -ForegroundColor Cyan
 
     # 需要恢复权限的更新程序列表
-    $exeList = @("SOGOUSmartAssistant.exe", "SogouPlayLauncher.exe", "SGWangzai.exe", "SGSmartAssistant.exe", "SGDownload.exe", "PinyinUp.exe")
+    $exeList = @("SogouPlayLauncher.exe", "SGWangzai.exe", "SGSmartAssistant.exe", "SGDownload.exe", "PinyinUp.exe")
 
     foreach ($file in $exeFiles) {
         try {

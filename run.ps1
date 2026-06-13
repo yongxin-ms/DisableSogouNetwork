@@ -94,7 +94,7 @@ function Add-BlockRule {
 
 
     # 需要禁用的更新程序列表
-    $exeList = @("SOGOUSmartAssistant.exe", "SogouPlayLauncher.exe", "SGWangzai.exe", "SGSmartAssistant.exe", "SGDownload.exe", "PinyinUp.exe")
+    $exeList = @("SogouPlayLauncher.exe", "SGWangzai.exe", "SGSmartAssistant.exe", "SGDownload.exe", "PinyinUp.exe")
     # 定义要拒绝的权限：读取 & 执行
     $denyRight = [System.Security.AccessControl.FileSystemRights]::Read -bor [System.Security.AccessControl.FileSystemRights]::ExecuteFile
     $denyRule = [System.Security.AccessControl.AccessControlType]::Deny

@@ -1,0 +1,20 @@
+name: Update Star History
+
+on:
+  schedule:
+    - cron: '0 0 * * 0'   # 每周日自动更新
+  workflow_dispatch:        # 也可以手动触发
+
+jobs:
+  metrics:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: lowlighter/metrics@latest
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          user: yongxin-ms
+          template: repository
+          repo: DisableSogouNetwork
+          filename: metrics.svg
+          plugin_stargazers: yes
+          plugin_stargazers_charts: yes

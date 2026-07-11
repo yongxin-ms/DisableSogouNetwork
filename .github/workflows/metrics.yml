@@ -6,7 +6,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: write   # ← 加这个
+  contents: write
 
 jobs:
   metrics:
@@ -15,7 +15,8 @@ jobs:
       - uses: lowlighter/metrics@latest
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
-          committer_token: ${{ secrets.GITHUB_TOKEN }}   # ← 加这个
+          committer_token: ${{ secrets.GITHUB_TOKEN }}
+          committer_branch: metrics
           user: yongxin-ms
           template: repository
           repo: DisableSogouNetwork

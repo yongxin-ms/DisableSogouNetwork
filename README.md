@@ -107,10 +107,8 @@ Remove-NetFirewallRule -Group 'DisableSogouNetwork'
 
 您的支持是我坚持的动力，感谢！
 
+[![Powered by DartNode](https://dartnode.com/branding/DN-Open-Source-sm.png)](https://dartnode.com "Powered by DartNode - Free VPS for Open Source")
+
 ## Star History
 
-[![Star History Chart](https://api.star-history.com/svg?repos=yongxin-ms/DisableSogouNetwork&type=Date)](https://www.star-history.com/#yongxin-ms/DisableSogouNetwork&Date)
-
-
-
-[![Powered by DartNode](https://dartnode.com/branding/DN-Open-Source-sm.png)](https://dartnode.com "Powered by DartNode - Free VPS for Open Source")
+![Star History](metrics.svg)

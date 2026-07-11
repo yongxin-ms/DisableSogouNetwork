@@ -2,8 +2,11 @@ name: Update Star History
 
 on:
   schedule:
-    - cron: '0 0 * * 0'   # 每周日自动更新
-  workflow_dispatch:        # 也可以手动触发
+    - cron: '0 0 * * 0'
+  workflow_dispatch:
+
+permissions:
+  contents: write   # ← 加这个
 
 jobs:
   metrics:
@@ -12,6 +15,7 @@ jobs:
       - uses: lowlighter/metrics@latest
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
+          committer_token: ${{ secrets.GITHUB_TOKEN }}   # ← 加这个
           user: yongxin-ms
           template: repository
           repo: DisableSogouNetwork

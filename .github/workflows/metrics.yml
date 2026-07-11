@@ -9,17 +9,65 @@ permissions:
   contents: write
 
 jobs:
-  metrics:
+  star-history:
     runs-on: ubuntu-latest
     steps:
-      - uses: lowlighter/metrics@latest
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          committer_token: ${{ secrets.GITHUB_TOKEN }}
-          committer_branch: metrics
-          user: yongxin-ms
-          template: repository
-          repo: DisableSogouNetwork
-          filename: metrics.svg
-          plugin_stargazers: yes
-          plugin_stargazers_charts: yes
+      - name: Install dependencies
+        run: pip install requests matplotlib
+
+      - name: Generate chart
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          python3 << 'EOF'
+          import requests, os, matplotlib
+          matplotlib.use('Agg')
+          import matplotlib.pyplot as plt
+          import matplotlib.dates as mdates
+          from datetime import datetime
+
+          headers = {
+              'Authorization': f"token {os.environ['GH_TOKEN']}",
+              'Accept': 'application/vnd.github.star+json'
+          }
+          stars, page = [], 1
+          while True:
+              resp = requests.get(
+                  'https://api.github.com/repos/yongxin-ms/DisableSogouNetwork/stargazers',
+                  headers=headers, params={'per_page': 100, 'page': page}
+              )
+              data = resp.json()
+              if not data: break
+              stars.extend(data)
+              if len(data) < 100: break
+              page += 1
+
+          dates = sorted(datetime.strptime(s['starred_at'], '%Y-%m-%dT%H:%M:%SZ') for s in stars)
+          counts = list(range(1, len(dates)+1))
+
+          fig, ax = plt.subplots(figsize=(10, 4))
+          ax.plot(dates, counts, color='#2196F3', linewidth=2)
+          ax.fill_between(dates, counts, alpha=0.1, color='#2196F3')
+          ax.xaxis.set_major_formatter(mdates.DateFormatter('%Y-%m'))
+          fig.autofmt_xdate()
+          ax.set_ylabel('Stars')
+          ax.set_title('Star History')
+          ax.grid(True, alpha=0.3)
+          plt.tight_layout()
+          plt.savefig('/tmp/star-history.svg', format='svg')
+          print(f'Done: {len(stars)} stars')
+          EOF
+
+      - name: Push to metrics branch
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git clone "https://x-access-token:${GH_TOKEN}@github.com/yongxin-ms/DisableSogouNetwork.git" /tmp/repo
+          cd /tmp/repo
+          git checkout metrics 2>/dev/null || git checkout --orphan metrics
+          cp /tmp/star-history.svg .
+          git add star-history.svg
+          git commit -m "Update star history [skip ci]" || echo "No changes"
+          git push origin metrics

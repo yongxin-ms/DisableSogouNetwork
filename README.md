@@ -111,4 +111,4 @@ Remove-NetFirewallRule -Group 'DisableSogouNetwork'
 
 ## Star History
 
-[![Star History Chart](https://starchart.cc/yongxin-ms/DisableSogouNetwork.svg)](https://starchart.cc/yongxin-ms/DisableSogouNetwork)
+![Star History](metrics.svg)

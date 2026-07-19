@@ -36,6 +36,9 @@ jobs:
                   'https://api.github.com/repos/yongxin-ms/DisableSogouNetwork/stargazers',
                   headers=headers, params={'per_page': 100, 'page': page}
               )
+              if resp.status_code != 200:
+                  print(f"Error: {resp.status_code} - {resp.text}")
+                  break
               data = resp.json()
               if not data: break
               stars.extend(data)

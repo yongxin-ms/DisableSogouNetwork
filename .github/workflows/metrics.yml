@@ -17,7 +17,7 @@ jobs:
 
       - name: Generate chart
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.STAR_TOKEN }}
         run: |
           python3 << 'EOF'
           import requests, os, matplotlib

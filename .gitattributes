@@ -1,1 +1,10 @@
-*.ps1 eol=crlf
+* text=auto
+
+*.sh   text eol=lf
+*.ps1  text eol=crlf
+*.psm1 text eol=crlf
+*.bat  text eol=crlf
+*.cmd  text eol=crlf
+
+*.png  binary
+*.dll  binary
